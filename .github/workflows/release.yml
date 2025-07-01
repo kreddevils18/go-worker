@@ -1,0 +1,47 @@
+name: Release Go Package
+
+on:
+  push:
+    tags:
+      - "v*"
+
+# Add permissions block to grant necessary access
+permissions:
+  contents: write
+  packages: write
+  issues: write
+  pull-requests: write
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.21"
+          check-latest: true
+
+      - name: Run tests
+        run: go test -v ./...
+
+      - name: Create GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update Go pkg site
+        run: |
+          curl -X POST https://proxy.golang.org/github.com/kreddevils18/go-worker/@v/${{ github.ref_name }}.info
